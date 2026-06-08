@@ -3,13 +3,20 @@
 # - --ignore-certificate-errors : accepte le certif local (auto-signé) côté écran.
 # - --autoplay-policy : autorise l'autoplay avec son de la vidéo.
 # uBlock Origin : voir README (installer l'extension dans le profil chromium).
-set -euo pipefail
+set -uo pipefail
 
 PORT="${PORT:-8443}"
 URL="https://localhost:${PORT}/display/"
 
-# Empêche la mise en veille de l'écran.
+# Empêche la mise en veille de l'écran (X11 ; ignoré sous Wayland).
 xset s off -dpms 2>/dev/null || true
+
+# Attendre que le serveur réponde (il démarre en parallèle au boot).
+echo "Attente du serveur sur $URL ..."
+for _ in $(seq 1 60); do
+  curl -k -s -o /dev/null "$URL" && break
+  sleep 1
+done
 
 # Nom du binaire selon la distro.
 BIN="$(command -v chromium-browser || command -v chromium || echo chromium)"
