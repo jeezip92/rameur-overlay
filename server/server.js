@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import https from 'node:https';
+import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { WebSocketServer } from 'ws';
@@ -49,6 +50,28 @@ function selectUrl(req) {
   }
   return `https://${host}:${port}/select/`;
 }
+
+// --- Télécharger l'autorité de certification mkcert depuis le téléphone ------
+// Permet d'installer la CA sur Android pour que le site soit "de confiance"
+// (requis pour installer la PWA et utiliser "Partager → Rameur").
+app.get('/ca.crt', (_req, res) => {
+  let caPath;
+  try {
+    const root = execSync('mkcert -CAROOT', { encoding: 'utf8' }).trim();
+    caPath = path.join(root, 'rootCA.pem');
+  } catch {
+    caPath = null;
+  }
+  if (!caPath || !fs.existsSync(caPath)) {
+    return res
+      .status(404)
+      .type('text')
+      .send("CA mkcert introuvable. Sur le Pi : installe mkcert puis relance scripts/make-cert.sh.");
+  }
+  res.setHeader('Content-Type', 'application/x-x509-ca-cert');
+  res.setHeader('Content-Disposition', 'attachment; filename="rameur-ca.crt"');
+  fs.createReadStream(caPath).pipe(res);
+});
 
 // --- Config exposée à l'écran (URL du WS ORM + mapping métriques) ------------
 app.get('/api/config', (_req, res) => {
