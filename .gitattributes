@@ -1,0 +1,10 @@
+# Forcer les fins de ligne LF pour tout ce qui tourne sous Linux (Pi).
+* text=auto eol=lf
+*.sh text eol=lf
+*.service text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.webmanifest text eol=lf
+*.md text eol=lf
