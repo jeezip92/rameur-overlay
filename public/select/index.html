@@ -14,25 +14,23 @@
 
     <!-- Vue par défaut : choix de plateforme -->
     <section id="home">
-      <p class="lead">Ouvre une plateforme, trouve ta vidéo, puis
-        <strong>Partager → Rameur</strong> pour la lancer sur l'écran.</p>
+      <p class="lead">1. Ouvre une plateforme et copie le lien de ta vidéo
+        (<strong>Partager → Copier le lien</strong>).<br>
+        2. Reviens ici et appuie sur <strong>Coller et lancer</strong>.</p>
       <div class="platforms">
         <a class="card yt" href="https://m.youtube.com/" target="_blank" rel="noopener">YouTube</a>
         <a class="card arte" href="https://www.arte.tv/fr/" target="_blank" rel="noopener">ARTE</a>
       </div>
 
-      <details class="fallback">
-        <summary>Coller un lien manuellement</summary>
+      <section class="paste-block">
+        <button id="clip-btn" type="button" class="clip">📋 Coller et lancer</button>
+        <p id="clip-hint" class="clip-hint" hidden></p>
         <form id="paste-form">
           <input id="paste-input" type="url" inputmode="url"
-                 placeholder="Colle ici un lien YouTube ou ARTE" />
+                 placeholder="…ou colle le lien ici à la main" />
           <button type="submit">Lancer</button>
         </form>
-      </details>
-
-      <p class="install-tip" id="install-tip" hidden>
-        💡 Ajoute cette page à l'écran d'accueil pour pouvoir partager depuis YouTube/ARTE.
-      </p>
+      </section>
     </section>
 
     <!-- Vue confirmation après envoi -->

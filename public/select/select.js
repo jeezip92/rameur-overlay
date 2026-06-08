@@ -9,11 +9,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/select/sw.js').catch(() => {});
 }
 
-// Conseil d'installation tant que l'app n'est pas en mode "standalone".
-const installed = window.matchMedia('(display-mode: standalone)').matches;
-if (!installed) document.getElementById('install-tip').hidden = false;
-
-// --- 1) Partage natif Android : la cible arrive en query (?url=… ou ?text=…) ---
+// --- 1) Partage natif Android (Chrome/Samsung) : arrive en query (?url=/?text=) ---
 const params = new URLSearchParams(location.search);
 const sharedUrl = params.get('url') || params.get('text') || '';
 if (sharedUrl) {
@@ -22,7 +18,31 @@ if (sharedUrl) {
   play(sharedUrl);
 }
 
-// --- 2) Fallback : formulaire "coller un lien" ---
+// --- 2) Bouton "Coller et lancer" : lit le presse-papier en un tap ---
+const clipBtn = document.getElementById('clip-btn');
+const clipHint = document.getElementById('clip-hint');
+clipBtn.addEventListener('click', async () => {
+  // navigator.clipboard exige un contexte sécurisé (cadenas). Sinon -> fallback champ.
+  if (navigator.clipboard && navigator.clipboard.readText) {
+    try {
+      const text = (await navigator.clipboard.readText()).trim();
+      if (text) return play(text);
+      return hint('Presse-papier vide — copie d\'abord le lien de la vidéo.');
+    } catch {
+      // permission refusée ou contexte non sécurisé
+    }
+  }
+  // Fallback : on met le focus sur le champ manuel.
+  document.getElementById('paste-input').focus();
+  hint('Colle le lien dans le champ ci-dessous, puis « Lancer ».');
+});
+
+function hint(msg) {
+  clipHint.textContent = msg;
+  clipHint.hidden = false;
+}
+
+// --- 3) Champ "coller à la main" ---
 document.getElementById('paste-form').addEventListener('submit', (e) => {
   e.preventDefault();
   const v = document.getElementById('paste-input').value.trim();
