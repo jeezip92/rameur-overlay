@@ -7,7 +7,7 @@ import https from 'node:https';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
-import { WebSocketServer } from 'ws';
+import { WebSocket, WebSocketServer } from 'ws';
 import QRCode from 'qrcode';
 import { config } from '../config.js';
 import { parseMedia } from './media.js';
@@ -122,18 +122,50 @@ try {
   process.exit(1);
 }
 
-// WebSocket de contrôle : l'écran /display s'y connecte pour recevoir les ordres.
-const wss = new WebSocketServer({ server, path: '/control' });
-wss.on('connection', (ws) => {
+// Deux canaux WebSocket sur le même serveur, routés par chemin :
+//  - /control : l'écran reçoit les ordres play/stop.
+//  - /orm     : relais sécurisé (wss) des métriques d'OpenRowingMonitor.
+const controlWss = new WebSocketServer({ noServer: true });
+const ormWss = new WebSocketServer({ noServer: true });
+
+server.on('upgrade', (req, socket, head) => {
+  const { pathname } = new URL(req.url, 'https://localhost');
+  if (pathname === '/control') {
+    controlWss.handleUpgrade(req, socket, head, (ws) => controlWss.emit('connection', ws, req));
+  } else if (pathname === '/orm') {
+    ormWss.handleUpgrade(req, socket, head, (ws) => ormWss.emit('connection', ws, req));
+  } else {
+    socket.destroy();
+  }
+});
+
+controlWss.on('connection', (ws) => {
   ws.send(JSON.stringify({ type: 'hello' }));
 });
 
 function broadcast(message) {
   const data = JSON.stringify(message);
-  for (const client of wss.clients) {
+  for (const client of controlWss.clients) {
     if (client.readyState === 1) client.send(data);
   }
 }
+
+// Relais ORM : chaque écran connecté ouvre une connexion vers ORM (ws:// local)
+// et reçoit les messages re-servis en wss:// (même origine, pas de contenu mixte).
+ormWss.on('connection', (client) => {
+  let upstream;
+  try {
+    upstream = new WebSocket(config.ormWsUrl);
+  } catch {
+    return client.close();
+  }
+  upstream.on('message', (data) => {
+    if (client.readyState === 1) client.send(data.toString());
+  });
+  upstream.on('error', () => {});
+  upstream.on('close', () => { try { client.close(); } catch {} });
+  client.on('close', () => { try { upstream.close(); } catch {} });
+});
 
 server.listen(config.port, () => {
   console.log(`✅ rameur-overlay sur https://localhost:${config.port}`);

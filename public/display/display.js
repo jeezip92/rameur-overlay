@@ -42,19 +42,14 @@ function showIdle() {
   idle.classList.remove('hidden');
 }
 
-// ---------- WebSocket de métriques ORM ----------
+// ---------- Métriques ORM (via le relais sécurisé /orm du serveur) ----------
 function connectMetrics() {
-  if (!CONFIG?.ormWsUrl) return;
-  let ws;
-  try { ws = new WebSocket(CONFIG.ormWsUrl); }
-  catch { return setTimeout(connectMetrics, 3000); }
-
+  const ws = new WebSocket(`wss://${location.host}/orm`);
   ws.onmessage = (ev) => {
-    let data;
-    try { data = JSON.parse(ev.data); } catch { return; }
-    // ORM peut encapsuler les métriques (ex: data.metrics) — on aplatit un peu.
-    const m = data.metrics || data.data || data;
-    updateMetrics(m);
+    let msg;
+    try { msg = JSON.parse(ev.data); } catch { return; }
+    // ORM envoie {type:"metrics",data:{…}} (et d'autres types qu'on ignore).
+    if (msg.type === 'metrics' && msg.data) updateMetrics(msg.data);
   };
   ws.onclose = () => setTimeout(connectMetrics, 3000);
   ws.onerror = () => ws.close();
