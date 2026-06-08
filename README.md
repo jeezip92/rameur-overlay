@@ -118,21 +118,53 @@ installer uBlock Origin :
 
 ---
 
-## ⚙️ Étape importante : brancher les vraies métriques ORM
+## ⚙️ Métriques ORM (intégration — confirmée)
 
-Le fichier **`config.js`** contient l'adresse du flux de métriques d'OpenRowingMonitor
-et la correspondance entre ses champs et l'affichage. Les valeurs par défaut sont une
-**hypothèse** — il faut les vérifier sur ton install :
+OpenRowingMonitor sert son interface sur le **port 80** et expose un WebSocket
+**`ws://<pi>/websocket`** qui pousse des messages `{ "type": "metrics", "data": { … } }`
+(et `type:"config"` qu'on ignore).
 
-1. Sur le Pi, ouvre l'écran ORM dans un navigateur.
-2. Ouvre les outils développeur (**F12**) → onglet **Réseau** → filtre **WS**.
-3. Clique sur la connexion WebSocket → onglet **Messages** → copie un message JSON.
-4. Reporte dans `config.js` :
-   - `ormWsUrl` : l'URL exacte du WebSocket (souvent `ws://localhost:8080/`),
-   - `metricsMap` : fais correspondre chaque ligne (`split`, `spm`, …) au **vrai nom
-     de champ** vu dans le JSON.
+Comme la page écran est en **HTTPS**, un `ws://` direct serait bloqué (contenu mixte) :
+le serveur **relaie** donc le flux ORM en **wss** via `/orm` (voir `server/server.js`),
+et la page écran s'y connecte. La correspondance des champs est dans **`config.js`**
+(`metricsMap`, avec support des chemins imbriqués type `interval.calories.sinceStart`).
 
-Redémarre ensuite le service : `sudo systemctl restart rameur-overlay`.
+Champs confirmés (fork JaapvanEkris) :
+
+| Affichage | Champ ORM |
+|---|---|
+| Allure /500m | `cyclePace` (s) |
+| Cadence (SPM) | `cycleStrokeRate` |
+| Puissance | `cyclePower` (W) |
+| Distance | `totalLinearDistance` (m) |
+| Temps | `totalMovingTime` (s) |
+| Coups | `totalNumberOfStrokes` |
+| Calories | `interval.calories.sinceStart` ⚠️ *(voir ci-dessous)* |
+| FC | `heartRate` |
+| Drag | `dragFactor` |
+
+Après modif de `config.js` : `sudo systemctl restart rameur-overlay`.
+
+### 🔧 Calibration ORM (Sportstech WRX700) — EN COURS
+
+ORM doit être calibré pour la machine (sinon puissance/calories/distance faux).
+Config ORM : `/opt/openrowingmonitor/config/config.js` ; profil officiel dans
+`rowerProfiles.js` → `Sportstech_WRX700` (`numOfImpulsesPerRevolution: 2`,
+`flywheelInertia: 0.72`, `dragFactor: 32000`).
+
+État au 8 juin 2026 :
+- ✅ Les surcharges aberrantes d'origine (inertie/drag divisés par 2, timings desserrés)
+  ont été retirées → **puissance (~95 W), allure (~2:35/500m), drag (~29000), SPM** sont
+  redevenus **réalistes**.
+- ⏳ **Nombre d'aimants à confirmer** : la distance et le comptage des coups sont ~2× trop
+  élevés → la machine a probablement **2 aimants** (pas 1). À tester avec
+  `numOfImpulsesPerRevolution: 2` (profil complet) + test « ramer 10 coups précis ».
+- ❌ **Calories toujours KO** : `totalCalories` est aberrant (millions) ; ORM lui-même
+  lit `interval.calories.sinceStart` (qu'on affiche maintenant), mais **ça ne donne
+  toujours pas un chiffre correct** → à investiguer (capturer `interval.calories.*`
+  et `workout.calories.*` en ramant ; vérifier unités / champ exact ; possible bug ORM).
+
+Voir **`AVANCEMENT.md`** pour le détail et les prochaines étapes.
 
 ---
 

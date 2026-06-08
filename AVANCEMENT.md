@@ -17,58 +17,67 @@ se lance sur l'écran au **centre**, entourée d'une **équerre** de deux barres
 
 ## ✅ État actuel — `2026-06-08`
 
-**Phase : code échafaudé et poussé. En attente de test sur le matériel.**
+**Phase : déployé et fonctionnel sur le Pi. Reste à finir la CALIBRATION ORM
+(calories + nombre d'aimants).**
 
 Décisions d'architecture arrêtées :
 - App **séparée** à côté d'ORM (on ne modifie pas ORM ; on lit juste son WebSocket).
-- Rendu **Chromium kiosque + uBlock Origin** (tout dans le navigateur, iframe vidéo).
-- Renvoi du choix via **Partage natif PWA** (Web Share Target) → impose **HTTPS**.
-  - Téléphone cible : **Android** (le partage natif n'existe pas sur iOS → fallback
-    « coller un lien » prévu malgré tout).
+- Rendu **Chromium kiosque** (labwc/Wayland) ; lien vidéo via iframe YouTube/ARTE.
+- Partage : **Web Share Target** marche **seulement via Chrome** (qui crée un WebAPK) ;
+  **Vivaldi ne peut pas** → on utilise le bouton **« Coller et lancer »** (presse-papier).
 
-Ce qui est **fait et fonctionnel** (testé en local hors Pi) :
-- [x] Serveur HTTPS + WebSocket de contrôle (`server/server.js`).
-- [x] Reconnaissance des liens YouTube/ARTE → URL d'embed (`server/media.js`) — **testé** ✓.
-- [x] Page écran : QR au repos + bascule équerre en lecture (`public/display/`).
-- [x] PWA téléphone : boutons YouTube/ARTE, partage natif, fallback coller (`public/select/`).
-- [x] Scripts Pi : `make-cert.sh` (HTTPS), `make-icons.sh`, `kiosk.sh`.
-- [x] Service systemd, README de déploiement détaillé, licence MIT.
-- [x] Dépôt GitHub **privé** : `jeezip92/rameur-overlay`.
-
----
-
-## ⏳ Prochaine étape (POINT DE REPRISE)
-
-**👉 Brancher les vraies métriques d'OpenRowingMonitor.** C'est le seul élément qui
-empêche la solution d'être pleinement opérationnelle.
-
-Ce qu'il faut récupérer sur le Pi, une fois rentré :
-1. Ouvrir l'écran ORM dans un navigateur → **F12** → onglet **Réseau** → filtre **WS**.
-2. Cliquer la connexion WebSocket → onglet **Messages** → copier **un message JSON**.
-3. Noter aussi l'**URL exacte** du WebSocket (souvent `ws://localhost:8080/`).
-
-Puis reporter dans **`config.js`** :
-- `ormWsUrl` → l'URL réelle,
-- `metricsMap` → faire correspondre chaque entrée (`split`, `spm`, `distance`,
-  `time`, `power`, `heartRate`, `strokes`, `calories`, `drag`) au **vrai nom de champ**
-  trouvé dans le JSON. *(Les valeurs actuelles sont une hypothèse à corriger.)*
-
-Si la mise en forme diffère (ex. l'allure est déjà une chaîne `m:ss`, ou la distance
-en cm), ajuster la fonction `format()` dans `public/display/display.js`.
+Ce qui est **fait et fonctionnel sur le Pi** (user `emat`, IP `192.168.1.108`) :
+- [x] Serveur HTTPS + WebSocket de contrôle + reconnaissance liens YouTube/ARTE.
+- [x] Page écran (QR ↔ équerre vidéo) + PWA téléphone (boutons + « Coller et lancer »).
+- [x] **Démarrage auto** : service systemd `rameur-overlay` + kiosque Chromium plein écran
+      via `~/.config/labwc/autostart` (ligne `bash ~/rameur-overlay/scripts/kiosk.sh &`).
+      `kiosk.sh` gère Wayland + `--password-store=basic` (pas d'invite trousseau).
+- [x] **Certif** mkcert + CA installée sur le tel Android (route `/ca.crt`).
+- [x] **Métriques ORM branchées** via relais sécurisé `/orm` (wss) → l'allure, la cadence,
+      la puissance, la distance, le temps, les coups s'affichent et sont **réalistes**.
+- [x] Dépôt GitHub `jeezip92/rameur-overlay` (le repasser en **privé** quand fini).
 
 ---
 
-## 🔜 Après ça (ordre suggéré)
+## ⏳ Prochaine étape (POINT DE REPRISE) — finir la calibration ORM
 
-1. **Tester le flux complet** sur le Pi : QR → install PWA Android → Partager →
-   vidéo + métriques en direct.
-2. **Régler l'épaisseur des barres** de l'équerre selon l'écran réel
-   (variables `--left-width` / `--bottom-height` dans `public/display/display.css`).
-3. **Installer uBlock Origin** dans le profil kiosque (anti-pub YouTube — voir README §7).
-4. **Activer les démarrages auto** : service systemd + `kiosk.sh` dans l'autostart.
-5. Vérifier le cas **ARTE** (géo-restriction FR/DE, programmes parfois non intégrables).
-6. (Optionnel) Bouton « stop / revenir au QR » accessible depuis le téléphone
-   (`POST /api/stop` existe déjà côté serveur, reste à exposer dans la PWA).
+Le rameur est un **Sportstech WRX700**. Config ORM : `/opt/openrowingmonitor/config/config.js`
+(sauvegarde `.bak` existante). Profil officiel : `rowerProfiles.js → Sportstech_WRX700`
+(`numOfImpulsesPerRevolution: 2`, `flywheelInertia: 0.72`, `dragFactor: 32000`).
+
+Acquis : les **surcharges aberrantes** d'origine (inertie/drag ÷2, timings desserrés) ont
+été retirées → puissance ~95 W, allure ~2:35/500m, drag ~29000, SPM ~19 = **réalistes**.
+
+Restent **2 problèmes** :
+
+1. **Nombre d'aimants (probablement 2, pas 1).** Distance et nombre de coups ~2× trop
+   élevés ; l'utilisateur observe « ORM voit 2 coups sur 3 » → symptôme du mauvais compte
+   d'impulsions. → Tester le **profil complet** (`numOfImpulsesPerRevolution: 2`), puis
+   **test précis** : ramer **exactement 10 coups** et comparer au compte détecté par ORM.
+   *(Config « 2 aimants » déjà fournie à l'utilisateur ; à appliquer/valider.)*
+
+2. **Calories toujours fausses.** `totalCalories` est aberrant (millions). ORM lui-même
+   lit **`interval.calories.sinceStart`** → l'overlay a été pointé vers ce champ (avec
+   support des chemins imbriqués), **mais ça ne donne toujours pas un bon chiffre**.
+   À investiguer la prochaine fois : capturer en ramant `interval.calories.*` ET
+   `workout.calories.*` (et leurs sous-champs `sinceStart`/`toEnd`/`totalSpent`),
+   vérifier unité et champ exact ; possible bug ORM sur ce fork.
+
+**Pour capturer le flux ORM** (depuis un PC du réseau, sans déranger l'utilisateur) :
+connexion `new WebSocket('ws://192.168.1.108/websocket')`, messages `{type:"metrics",data}`.
+Redémarrer ORM après modif config : `sudo systemctl restart openrowingmonitor`.
+
+---
+
+## 🔜 Améliorations optionnelles (après la calibration)
+
+1. **Régler l'épaisseur des barres** de l'équerre (variables `--left-width` /
+   `--bottom-height` dans `public/display/display.css`).
+2. **uBlock Origin** dans le profil kiosque (`~/.config/rameur-kiosk`) — anti-pub YouTube.
+3. Vérifier le cas **ARTE** (géo-restriction FR/DE, programmes parfois non intégrables).
+4. Bouton **« stop / revenir au QR »** depuis le téléphone (`POST /api/stop` existe déjà
+   côté serveur, reste à l'exposer dans la PWA).
+5. Envisager de **masquer le DRAG** de l'affichage (chiffre ~29000 peu parlant pour l'user).
 
 ---
 
