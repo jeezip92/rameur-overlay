@@ -8,6 +8,15 @@ set -uo pipefail
 PORT="${PORT:-8443}"
 URL="https://localhost:${PORT}/display/"
 
+# Retrouver l'environnement d'affichage Wayland même si le script est lancé
+# depuis un shell où ces variables ne sont pas exportées.
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+if [ -z "${WAYLAND_DISPLAY:-}" ]; then
+  for s in "$XDG_RUNTIME_DIR"/wayland-[0-9]*; do
+    [ -S "$s" ] && export WAYLAND_DISPLAY="$(basename "$s")" && break
+  done
+fi
+
 # Empêche la mise en veille de l'écran (X11 ; ignoré sous Wayland).
 xset s off -dpms 2>/dev/null || true
 
