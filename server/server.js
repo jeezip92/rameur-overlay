@@ -1,6 +1,7 @@
 // Serveur compagnon : sert les pages /display (écran) et /select (PWA téléphone),
 // reçoit le choix de vidéo et le pousse vers l'écran via WebSocket de contrôle.
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import https from 'node:https';
 import { fileURLToPath } from 'node:url';
@@ -24,9 +25,29 @@ app.use('/shared', express.static(path.join(PUBLIC, 'shared')));
 
 app.get('/', (_req, res) => res.redirect('/display/'));
 
-// URL de la page de sélection, calculée depuis l'hôte de la requête (IP du Pi).
+// Première IPv4 non interne de la machine (l'IP locale du Pi sur le WiFi/LAN).
+function lanIp() {
+  for (const addrs of Object.values(os.networkInterfaces())) {
+    for (const a of addrs || []) {
+      if (a.family === 'IPv4' && !a.internal) return a.address;
+    }
+  }
+  return null;
+}
+
+// URL de la page de sélection à encoder dans le QR.
+// Le QR doit toujours pointer vers l'IP du Pi : si la page écran est ouverte via
+// localhost (cas du kiosque), le téléphone ne pourrait pas joindre "localhost".
+// On force donc l'IP locale détectée (surchargeable par PUBLIC_HOST).
 function selectUrl(req) {
-  return `https://${req.headers.host}/select/`;
+  const port = config.port;
+  let host = process.env.PUBLIC_HOST || lanIp();
+  if (!host) {
+    // Dernier recours : l'hôte de la requête (sauf si c'est localhost).
+    const reqHost = (req.headers.host || '').split(':')[0];
+    host = /^(localhost|127\.|::1)/.test(reqHost) ? 'localhost' : reqHost;
+  }
+  return `https://${host}:${port}/select/`;
 }
 
 // --- Config exposée à l'écran (URL du WS ORM + mapping métriques) ------------
