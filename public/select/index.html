@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b0f14" />
+  <title>Rameur — Choisir une vidéo</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="select.css" />
+</head>
+<body>
+  <main>
+    <h1>Choisir une vidéo</h1>
+
+    <!-- Vue par défaut : choix de plateforme -->
+    <section id="home">
+      <p class="lead">Ouvre une plateforme, trouve ta vidéo, puis
+        <strong>Partager → Rameur</strong> pour la lancer sur l'écran.</p>
+      <div class="platforms">
+        <a class="card yt" href="https://m.youtube.com/" target="_blank" rel="noopener">YouTube</a>
+        <a class="card arte" href="https://www.arte.tv/fr/" target="_blank" rel="noopener">ARTE</a>
+      </div>
+
+      <details class="fallback">
+        <summary>Coller un lien manuellement</summary>
+        <form id="paste-form">
+          <input id="paste-input" type="url" inputmode="url"
+                 placeholder="Colle ici un lien YouTube ou ARTE" />
+          <button type="submit">Lancer</button>
+        </form>
+      </details>
+
+      <p class="install-tip" id="install-tip" hidden>
+        💡 Ajoute cette page à l'écran d'accueil pour pouvoir partager depuis YouTube/ARTE.
+      </p>
+    </section>
+
+    <!-- Vue confirmation après envoi -->
+    <section id="result" hidden>
+      <div class="result-card">
+        <p id="result-msg"></p>
+        <button id="back-btn" type="button">Choisir une autre vidéo</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="select.js"></script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh;
+  background: #0b0f14; color: #f4f7fb;
+  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+}
+main { max-width: 480px; margin: 0 auto; padding: 28px 20px 48px; }
+h1 { font-size: 26px; margin: 8px 0 18px; }
+.lead { color: #b6c6d4; line-height: 1.5; }
+.lead strong { color: #fff; }
+
+.platforms { display: grid; gap: 16px; margin: 26px 0; }
+.card {
+  display: flex; align-items: center; justify-content: center;
+  height: 92px; border-radius: 16px; text-decoration: none;
+  font-size: 22px; font-weight: 700; color: #fff;
+}
+.card.yt   { background: linear-gradient(135deg, #ff2d2d, #b30000); }
+.card.arte { background: linear-gradient(135deg, #ff8a00, #d35400); }
+
+.fallback { margin-top: 18px; color: #b6c6d4; }
+.fallback summary { cursor: pointer; padding: 8px 0; }
+#paste-form { display: flex; gap: 8px; margin-top: 10px; }
+#paste-input {
+  flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #25323d;
+  background: #0f161d; color: #fff; font-size: 15px;
+}
+#paste-form button, #back-btn {
+  padding: 12px 16px; border: 0; border-radius: 10px;
+  background: #36c2ff; color: #03121a; font-weight: 700; font-size: 15px; cursor: pointer;
+}
+
+.install-tip { margin-top: 24px; padding: 12px 14px; border-radius: 12px;
+  background: #11202b; color: #9fd9f5; font-size: 14px; line-height: 1.4; }
+
+.result-card { margin-top: 40px; padding: 24px; border-radius: 16px;
+  background: #11202b; text-align: center; }
+#result-msg { font-size: 18px; margin: 0 0 20px; line-height: 1.5; }

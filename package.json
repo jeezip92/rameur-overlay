@@ -1,0 +1,18 @@
+{
+  "name": "rameur-overlay",
+  "version": "0.1.0",
+  "description": "Overlay vidéo (ARTE/YouTube) en équerre par-dessus les métriques OpenRowingMonitor, piloté depuis un téléphone via QR code + PWA.",
+  "type": "module",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "qrcode": "^1.5.4",
+    "ws": "^8.18.0"
+  }
+}

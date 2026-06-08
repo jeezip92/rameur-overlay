@@ -1,0 +1,56 @@
+:root {
+  /* Épaisseur des deux barres de l'équerre — ajuste à ton écran. */
+  --left-width: 280px;
+  --bottom-height: 150px;
+  --bar-bg: #0b0f14;
+  --accent: #36c2ff;
+  --text: #f4f7fb;
+  --muted: #8aa0b2;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%; width: 100%;
+  background: #000; color: var(--text); overflow: hidden;
+  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+  cursor: none; /* écran kiosque : pas de curseur */
+}
+.hidden { display: none !important; }
+.screen { position: fixed; inset: 0; }
+
+/* --- État repos : QR --- */
+#idle { display: grid; place-items: center; background: radial-gradient(circle at 50% 30%, #16202b, #05080c); }
+.qr-card { text-align: center; }
+.qr-card h1 { font-weight: 600; font-size: clamp(22px, 3vw, 40px); margin-bottom: 28px; }
+.qr-card img { width: min(46vh, 460px); height: auto; background: #fff; padding: 18px; border-radius: 20px; }
+#hint { color: var(--muted); margin-top: 24px; font-size: clamp(14px, 1.4vw, 20px); }
+
+/* --- État lecture : équerre en grille --- */
+#app {
+  display: grid;
+  height: 100vh; width: 100vw;
+  grid-template-columns: var(--left-width) 1fr;
+  grid-template-rows: 1fr var(--bottom-height);
+  grid-template-areas:
+    "left video"
+    "left bottom";
+}
+#bar-left   { grid-area: left;   background: var(--bar-bg); border-right: 2px solid #1c2733; }
+#bar-bottom { grid-area: bottom; background: var(--bar-bg); border-top: 2px solid #1c2733; }
+#video      { grid-area: video;  background: #000; }
+
+#player { width: 100%; height: 100%; border: 0; display: block; }
+
+/* Barre gauche : pile verticale */
+#bar-left { display: flex; flex-direction: column; justify-content: center; gap: 6%; padding: 24px 18px; }
+#bar-left .metric { display: flex; flex-direction: column; align-items: flex-start; }
+#bar-left .label { color: var(--muted); font-size: clamp(12px, 1vw, 18px); text-transform: uppercase; letter-spacing: 1px; }
+#bar-left .value { font-variant-numeric: tabular-nums; font-weight: 700; font-size: clamp(28px, 3.2vw, 56px); line-height: 1; }
+#bar-left .big .value { color: var(--accent); }
+
+/* Barre basse : ligne horizontale */
+#bar-bottom { display: flex; align-items: center; justify-content: space-around; padding: 0 24px; }
+#bar-bottom .metric { display: flex; align-items: baseline; gap: 8px; }
+#bar-bottom .label { color: var(--muted); font-size: clamp(12px, 1vw, 18px); text-transform: uppercase; }
+#bar-bottom .value { font-variant-numeric: tabular-nums; font-weight: 700; font-size: clamp(22px, 2.4vw, 40px); }
+#bar-bottom .unit { color: var(--muted); font-size: clamp(11px, 0.9vw, 16px); }

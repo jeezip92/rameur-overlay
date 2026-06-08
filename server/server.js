@@ -1,0 +1,98 @@
+// Serveur compagnon : sert les pages /display (écran) et /select (PWA téléphone),
+// reçoit le choix de vidéo et le pousse vers l'écran via WebSocket de contrôle.
+import fs from 'node:fs';
+import path from 'node:path';
+import https from 'node:https';
+import { fileURLToPath } from 'node:url';
+import express from 'express';
+import { WebSocketServer } from 'ws';
+import QRCode from 'qrcode';
+import { config } from '../config.js';
+import { parseMedia } from './media.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const PUBLIC = path.join(__dirname, '..', 'public');
+
+const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+// --- Fichiers statiques -----------------------------------------------------
+app.use('/select', express.static(path.join(PUBLIC, 'select')));
+app.use('/display', express.static(path.join(PUBLIC, 'display')));
+app.use('/shared', express.static(path.join(PUBLIC, 'shared')));
+
+app.get('/', (_req, res) => res.redirect('/display/'));
+
+// URL de la page de sélection, calculée depuis l'hôte de la requête (IP du Pi).
+function selectUrl(req) {
+  return `https://${req.headers.host}/select/`;
+}
+
+// --- Config exposée à l'écran (URL du WS ORM + mapping métriques) ------------
+app.get('/api/config', (_req, res) => {
+  res.json({ ormWsUrl: config.ormWsUrl, metricsMap: config.metricsMap });
+});
+
+// --- QR code ----------------------------------------------------------------
+// Renvoie un PNG encodant l'URL de la page /select (à scanner depuis le tel).
+app.get('/api/qr', async (req, res) => {
+  try {
+    const png = await QRCode.toBuffer(selectUrl(req), { width: 600, margin: 2 });
+    res.type('png').send(png);
+  } catch (err) {
+    res.status(500).send(String(err));
+  }
+});
+
+// --- Lancer une vidéo -------------------------------------------------------
+// La PWA appelle ça avec l'URL partagée/collée. On valide, on calcule l'embed,
+// puis on diffuse l'ordre à l'écran (clients WebSocket de contrôle).
+app.post('/api/play', (req, res) => {
+  const raw = (req.body && req.body.url) || '';
+  const media = parseMedia(raw);
+  if (!media) {
+    return res.status(400).json({ ok: false, error: 'URL non reconnue (YouTube ou ARTE attendu).' });
+  }
+  broadcast({ type: 'play', ...media });
+  res.json({ ok: true, media });
+});
+
+// Revenir à l'écran QR.
+app.post('/api/stop', (_req, res) => {
+  broadcast({ type: 'stop' });
+  res.json({ ok: true });
+});
+
+// --- HTTPS + WebSocket ------------------------------------------------------
+let server;
+try {
+  const credentials = {
+    key: fs.readFileSync(config.tls.key),
+    cert: fs.readFileSync(config.tls.cert),
+  };
+  server = https.createServer(credentials, app);
+} catch (err) {
+  console.error('\n❌ Certificat TLS introuvable. Lance d\'abord scripts/make-cert.sh');
+  console.error(`   (clé: ${config.tls.key}, cert: ${config.tls.cert})\n`);
+  process.exit(1);
+}
+
+// WebSocket de contrôle : l'écran /display s'y connecte pour recevoir les ordres.
+const wss = new WebSocketServer({ server, path: '/control' });
+wss.on('connection', (ws) => {
+  ws.send(JSON.stringify({ type: 'hello' }));
+});
+
+function broadcast(message) {
+  const data = JSON.stringify(message);
+  for (const client of wss.clients) {
+    if (client.readyState === 1) client.send(data);
+  }
+}
+
+server.listen(config.port, () => {
+  console.log(`✅ rameur-overlay sur https://localhost:${config.port}`);
+  console.log(`   Écran  : https://localhost:${config.port}/display/`);
+  console.log(`   Tel    : https://<ip-du-pi>:${config.port}/select/`);
+});

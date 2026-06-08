@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Rameur — Écran</title>
+  <link rel="stylesheet" href="display.css" />
+</head>
+<body>
+  <!-- État repos : QR code à scanner -->
+  <section id="idle" class="screen">
+    <div class="qr-card">
+      <h1>Scanne pour choisir une vidéo</h1>
+      <img id="qr" alt="QR code" src="/api/qr" />
+      <p id="hint">Téléphone sur le même WiFi · Ajoute la page à l'écran d'accueil</p>
+    </div>
+  </section>
+
+  <!-- État lecture : équerre (barres métriques + vidéo) -->
+  <section id="active" class="screen hidden">
+    <div id="app">
+      <aside id="bar-left">
+        <div class="metric big">
+          <span class="label">/500m</span>
+          <span class="value" data-metric="split">--</span>
+        </div>
+        <div class="metric big">
+          <span class="label">SPM</span>
+          <span class="value" data-metric="spm">--</span>
+        </div>
+        <div class="metric">
+          <span class="label">Distance</span>
+          <span class="value" data-metric="distance">--</span>
+        </div>
+        <div class="metric">
+          <span class="label">Temps</span>
+          <span class="value" data-metric="time">--</span>
+        </div>
+      </aside>
+
+      <main id="video">
+        <iframe id="player" allow="autoplay; encrypted-media; fullscreen"
+                allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+      </main>
+
+      <footer id="bar-bottom">
+        <div class="metric"><span class="label">Puissance</span><span class="value" data-metric="power">--</span><span class="unit">W</span></div>
+        <div class="metric"><span class="label">FC</span><span class="value" data-metric="heartRate">--</span><span class="unit">bpm</span></div>
+        <div class="metric"><span class="label">Coups</span><span class="value" data-metric="strokes">--</span></div>
+        <div class="metric"><span class="label">Calories</span><span class="value" data-metric="calories">--</span></div>
+        <div class="metric"><span class="label">Drag</span><span class="value" data-metric="drag">--</span></div>
+      </footer>
+    </div>
+  </section>
+
+  <script src="display.js"></script>
+</body>
+</html>

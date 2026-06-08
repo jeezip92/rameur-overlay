@@ -1,0 +1,22 @@
+# Service systemd pour le serveur compagnon.
+# Installer : sudo cp systemd/rameur-overlay.service /etc/systemd/system/
+#             (adapte User= et WorkingDirectory= à ton install)
+#             sudo systemctl enable --now rameur-overlay
+[Unit]
+Description=Rameur overlay (serveur compagnon vidéo/QR)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/rameur-overlay
+ExecStart=/usr/bin/node server/server.js
+Environment=PORT=8443
+# Décommente et adapte si ORM n'est pas sur localhost:8080 :
+# Environment=ORM_WS_URL=ws://localhost:8080/
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
