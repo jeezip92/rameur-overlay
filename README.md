@@ -172,6 +172,48 @@ Redémarre ensuite le service : `sudo systemctl restart rameur-overlay`.
 
 ---
 
+## 📡 Comment capturer le message WebSocket d'ORM
+
+Pour finaliser le mapping des métriques (section ci-dessus), il faut récupérer **un
+message JSON** envoyé par OpenRowingMonitor **et l'URL** de son WebSocket. Deux méthodes.
+
+### 🥇 Méthode 1 — Outils développeur du navigateur (recommandée)
+
+Sur le Pi (ou un PC/téléphone sur le **même WiFi**) :
+
+1. Ouvre **OpenRowingMonitor** dans **Chrome/Chromium** (`http://<ip-du-pi>` ou `http://localhost`).
+2. Appuie sur **F12** (ou clic droit → *Inspecter*) pour ouvrir les outils développeur.
+3. Onglet **Network** (Réseau).
+4. Dans la barre de filtres, clique **WS** (filtre les WebSockets).
+5. **Recharge la page (F5)** — sinon la connexion déjà ouverte n'apparaît pas.
+6. Une ligne apparaît : c'est l'**URL** du WebSocket (`ws://…` ou `wss://…`). **Clique dessus.**
+7. À droite, ouvre l'onglet **Messages**.
+8. **⚠️ Tire quelques coups sur le rameur** pendant ce temps, sinon toutes les valeurs
+   seront à zéro et le mapping sera impossible.
+9. Clique sur un message entrant (↓) **bien rempli** → son contenu JSON s'affiche.
+
+**À récupérer :**
+- 📍 l'**URL** affichée en haut (étape 6),
+- 📄 le **JSON** d'un message (clic droit → *Copy message*).
+
+### 🥈 Méthode 2 — Ligne de commande (si les DevTools coincent)
+
+Sur le Pi, en adaptant l'URL :
+
+```bash
+sudo npm install -g wscat          # une seule fois
+wscat -c ws://localhost:8080/      # tire des coups pendant l'écoute
+```
+
+Copie une ligne de message reçue + l'URL utilisée.
+
+> 💡 Pas besoin de comprendre le JSON : copie-le brut, même long. Il sert à remplir
+> `ormWsUrl` et `metricsMap` dans `config.js` (voir « Étape importante » plus haut).
+> Si tu ne trouves pas le port/l'URL d'ORM, regarde la barre d'adresse de son écran
+> ou sa configuration.
+
+---
+
 ## 📄 Licence
 
 MIT.
