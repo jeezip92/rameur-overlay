@@ -21,6 +21,12 @@ done
 # Nom du binaire selon la distro.
 BIN="$(command -v chromium-browser || command -v chromium || echo chromium)"
 
+# Plateforme d'affichage : Wayland (labwc/wayfire) si disponible, sinon X11.
+PLATFORM=()
+if [ -n "${WAYLAND_DISPLAY:-}" ]; then
+  PLATFORM=(--ozone-platform=wayland --enable-features=UseOzonePlatform)
+fi
+
 exec "$BIN" \
   --kiosk "$URL" \
   --noerrdialogs \
@@ -29,4 +35,5 @@ exec "$BIN" \
   --ignore-certificate-errors \
   --autoplay-policy=no-user-gesture-required \
   --check-for-update-interval=31536000 \
+  "${PLATFORM[@]}" \
   --user-data-dir="$HOME/.config/rameur-kiosk"
