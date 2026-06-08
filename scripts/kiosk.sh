@@ -35,5 +35,6 @@ exec "$BIN" \
   --ignore-certificate-errors \
   --autoplay-policy=no-user-gesture-required \
   --check-for-update-interval=31536000 \
+  --password-store=basic \
   "${PLATFORM[@]}" \
   --user-data-dir="$HOME/.config/rameur-kiosk"
