@@ -55,12 +55,19 @@ function connectMetrics() {
   ws.onerror = () => ws.close();
 }
 
+// Résout une clé éventuellement imbriquée, ex: "interval.calories.sinceStart".
+function getField(obj, path) {
+  return path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj);
+}
+
 function updateMetrics(m) {
   const map = CONFIG.metricsMap || {};
   for (const [slot, key] of Object.entries(map)) {
     const el = document.querySelector(`[data-metric="${slot}"]`);
-    if (!el || m[key] === undefined || m[key] === null) continue;
-    el.textContent = format(slot, m[key]);
+    if (!el) continue;
+    const val = getField(m, key);
+    if (val === undefined || val === null) continue;
+    el.textContent = format(slot, val);
   }
 }
 

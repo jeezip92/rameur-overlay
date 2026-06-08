@@ -28,7 +28,7 @@ export const config = {
     power:     'cyclePower',         // puissance (W)
     heartRate: 'heartRate',          // fréquence cardiaque (bpm)
     strokes:   'totalNumberOfStrokes',// nb de coups
-    calories:  'totalCalories',      // calories
+    calories:  'interval.calories.sinceStart', // calories (champ utilisé par ORM lui-même ; totalCalories est cassé)
     drag:      'dragFactor',         // facteur de résistance
   },
 };
