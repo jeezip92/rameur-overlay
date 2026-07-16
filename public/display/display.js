@@ -63,12 +63,43 @@ function getField(obj, path) {
 function updateMetrics(m) {
   const map = CONFIG.metricsMap || {};
   for (const [slot, key] of Object.entries(map)) {
+    // Calories : on les calcule nous-mêmes à partir de la puissance (ORM les donne faux)
+    if (slot === 'calories') continue;
     const el = document.querySelector(`[data-metric="${slot}"]`);
     if (!el) continue;
     const val = getField(m, key);
     if (val === undefined || val === null) continue;
     el.textContent = format(slot, val);
   }
+  // Calcul des calories depuis la puissance (formule Concept2)
+  // ORM donne des calories aberrantes sur le WRX700 (profil incomplet)
+  updateCalories(m);
+}
+
+// --- Calcul des calories à partir de la puissance (contourne le bug ORM) ---
+// Les calories ORM sont aberrantes sur le WRX700 (totalWork ×10⁵).
+// Formule Concept2 PM5 : Cal/h = (P + 0.35 × P³/300²) × 4.0
+// (P = puissance en Watts, résultat en kcal/h — inclut le métabolisme de repos)
+let lastCalUpdate = 0;
+let computedCalories = 0;
+
+function updateCalories(m) {
+  const power = m.cyclePower || m.instantPower || 0;
+  const movingTime = m.totalMovingTime || 0;
+  if (power <= 0 || movingTime <= 0) return;
+
+  const dt = movingTime - lastCalUpdate;
+  lastCalUpdate = movingTime;
+
+  // dt doit être petit (< 5s) et positif pour éviter les sauts
+  if (dt <= 0 || dt > 5) return;
+
+  // Cal/h = (P + 0.35 × P³ / 300²) × 4.0
+  const calPerHour = (power + 0.35 * Math.pow(power, 3) / 90000) * 4.0;
+  computedCalories += calPerHour * dt / 3600;
+
+  const el = document.querySelector('[data-metric="calories"]');
+  if (el) el.textContent = Math.round(computedCalories);
 }
 
 // Mise en forme par type de métrique.

@@ -56,12 +56,7 @@ Restent **2 problèmes** :
    **test précis** : ramer **exactement 10 coups** et comparer au compte détecté par ORM.
    *(Config « 2 aimants » déjà fournie à l'utilisateur ; à appliquer/valider.)*
 
-2. **Calories toujours fausses.** `totalCalories` est aberrant (millions). ORM lui-même
-   lit **`interval.calories.sinceStart`** → l'overlay a été pointé vers ce champ (avec
-   support des chemins imbriqués), **mais ça ne donne toujours pas un bon chiffre**.
-   À investiguer la prochaine fois : capturer en ramant `interval.calories.*` ET
-   `workout.calories.*` (et leurs sous-champs `sinceStart`/`toEnd`/`totalSpent`),
-   vérifier unité et champ exact ; possible bug ORM sur ce fork.
+2. **Calories désormais calculées côté client.** `totalCalories`/`interval.calories.*` d'ORM sont aberrants (×10⁵, car `totalWork` est faux sur le WRX700). → `display.js` utilise la **formule Concept2 PM5** à partir de `cyclePower` (la puissance instantanée, qui elle est réaliste ~95W) : `Cal/h = (P + 0.35 × P³/300²) × 4.0`. Résultat : ~3 Cal pour 6 coups (vs 178 125 avec ORM).
 
 **Pour capturer le flux ORM** (depuis un PC du réseau, sans déranger l'utilisateur) :
 connexion `new WebSocket('ws://192.168.1.108/websocket')`, messages `{type:"metrics",data}`.

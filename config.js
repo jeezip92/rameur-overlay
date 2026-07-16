@@ -28,7 +28,7 @@ export const config = {
     power:     'cyclePower',         // puissance (W)
     heartRate: 'heartRate',          // fréquence cardiaque (bpm)
     strokes:   'totalNumberOfStrokes',// nb de coups
-    calories:  'interval.calories.sinceStart', // calories (champ utilisé par ORM lui-même ; totalCalories est cassé)
+    calories:  'interval.calories.sinceStart', // calories — NB: sur WRX700 ce champ est aberrant (×10⁵) ; display.js les recalcule depuis la puissance (formule Concept2)
     drag:      'dragFactor',         // facteur de résistance
   },
 };
