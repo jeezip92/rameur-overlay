@@ -15,7 +15,7 @@ async function loadConfig() {
     const r = await fetch('/api/config');
     CONFIG = await r.json();
   } catch {
-    CONFIG = { ormWsUrl: 'ws://localhost:8080/', metricsMap: {} };
+    CONFIG = { ormWsUrl: 'ws://localhost/websocket', metricsMap: {} };
   }
 }
 

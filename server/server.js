@@ -152,19 +152,44 @@ function broadcast(message) {
 
 // Relais ORM : chaque écran connecté ouvre une connexion vers ORM (ws:// local)
 // et reçoit les messages re-servis en wss:// (même origine, pas de contenu mixte).
+// Tentatives de reconnexion automatique si ORM redémarre.
 ormWss.on('connection', (client) => {
-  let upstream;
-  try {
-    upstream = new WebSocket(config.ormWsUrl);
-  } catch {
-    return client.close();
+  let upstream = null;
+  let reconnectTimer = null;
+  let closed = false;
+
+  function connectOrm() {
+    if (closed) return;
+    try {
+      upstream = new WebSocket(config.ormWsUrl);
+    } catch (err) {
+      console.error(`ORM WS connection failed (${config.ormWsUrl}): ${err.message}`);
+      reconnectTimer = setTimeout(connectOrm, 3000);
+      return;
+    }
+    upstream.on('open', () => {
+      console.log(`ORM connected via ${config.ormWsUrl}`);
+    });
+    upstream.on('message', (data) => {
+      if (client.readyState === 1) client.send(data.toString());
+    });
+    upstream.on('error', (err) => {
+      console.error(`ORM WS error: ${err.message || err}`);
+    });
+    upstream.on('close', () => {
+      console.log('ORM disconnected — reconnecting in 3s…');
+      upstream = null;
+      if (!closed) reconnectTimer = setTimeout(connectOrm, 3000);
+    });
   }
-  upstream.on('message', (data) => {
-    if (client.readyState === 1) client.send(data.toString());
+
+  connectOrm();
+
+  client.on('close', () => {
+    closed = true;
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+    if (upstream) try { upstream.close(); } catch {}
   });
-  upstream.on('error', () => {});
-  upstream.on('close', () => { try { client.close(); } catch {} });
-  client.on('close', () => { try { upstream.close(); } catch {} });
 });
 
 server.listen(config.port, () => {
